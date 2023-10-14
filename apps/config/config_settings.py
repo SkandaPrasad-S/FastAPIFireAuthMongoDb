@@ -30,5 +30,21 @@ class AppSettings(BaseSettings):
 def get_settings():
     return AppSettings()
 
+@lru_cache()
+def get_firebase_auth():
+    settings = get_settings()
+    # Load configuration settings from the .env file
+    firebase_config = {
+        "apiKey": settings.firebase_api_key,
+        "authDomain": settings.firebase_auth_domain,
+        "projectId": settings.firebase_project_id,
+        "storageBucket": settings.firebase_storage_bucket,
+        "messagingSenderId": settings.firebase_messaging_sender_id,
+        "appId": settings.firebase_app_id,
+        "measurementId": settings.firebase_measurement_id,
+        "databaseURL" : ""
+    }
+    return firebase_config
+
 
 settings = get_settings()

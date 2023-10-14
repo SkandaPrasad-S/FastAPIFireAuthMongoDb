@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic_settings import BaseSettings
 import pyrebase
 import firebase_admin
 from pathlib import Path
@@ -10,24 +9,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
 from firebase_admin import auth
-from config.config_settings import get_settings
+from config.config_settings import get_settings,get_firebase_auth
+from database.mongoHandler import MongoDBHandler
 from models.user import UserLogin,UserRegister
+
+
 # Create an instance of the FastAPI router
 authRouter = APIRouter()
-
 settings = get_settings()
-# Load configuration settings from the .env file
-firebase_config = {
-    "apiKey": settings.firebase_api_key,
-    "authDomain": settings.firebase_auth_domain,
-    "projectId": settings.firebase_project_id,
-    "storageBucket": settings.firebase_storage_bucket,
-    "messagingSenderId": settings.firebase_messaging_sender_id,
-    "appId": settings.firebase_app_id,
-    "measurementId": settings.firebase_measurement_id,
-    "databaseURL" : ""
-}
+firebase_config = get_firebase_auth()
 firebase = pyrebase.initialize_app(firebase_config)
+mongo = MongoDBHandler()
 
 # Initialize Firebase Admin SDK with credentials
 firebase_admin.initialize_app(firebase_admin.credentials.Certificate(settings.FIREBASE_ADMIN_CREDENTIALS))
@@ -43,6 +35,10 @@ async def register_user(data: UserRegister):
             email=data.email,
             password=data.password
         )
+        mongo.insert_one_document({
+            "user_fullname": data.user_fullname,
+            "email" : data.email
+        })
         return {"message": "User registered successfully", "uid": user.uid}
     except auth.EmailAlreadyExistsError:
         raise HTTPException(status_code=400, detail="Email already registered")
